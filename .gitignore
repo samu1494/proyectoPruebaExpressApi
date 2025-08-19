@@ -1,0 +1,26 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Templos de IDEs y editores
+.vscode/
+.idea/
+
+# Dependencias de la aplicación
+.env
+
+# Archivos de compilación
+dist/
+
+# OS files (macOS, Windows, etc.)
+.DS_Store
+Thumbs.db
+
+# Archivos de sistema
+*.swp
