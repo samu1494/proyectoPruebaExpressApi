@@ -1,20 +1,20 @@
-const express = require("express");
-const crypto = require("node:crypto"); //obtener un id encriptado
-const app = express();
-const movies = require("./movies.json");
-const { validateMovie, validatePartialMovie } = require("./schemes/movie");
+const express = require("express"); // require -> commonJS
+const crypto = require("node:crypto");
 const cors = require("cors");
 
-const PORT = process.env.PORT || 1234;
+const movies = require("./movies.json");
+const { validateMovie, validatePartialMovie } = require("./schemas/movie");
 
+const app = express();
 app.use(express.json());
 app.use(
   cors({
     origin: (origin, callback) => {
-      ACCEPTED_ORIGINS = [
-        "https://movies.com",
-        "https://minu.dev",
+      const ACCEPTED_ORIGINS = [
         "http://localhost:8080",
+        "http://localhost:1234",
+        "https://movies.com",
+        "https://midu.dev",
       ];
 
       if (ACCEPTED_ORIGINS.includes(origin)) {
@@ -25,113 +25,84 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error("Acceso no permitido"));
+      return callback(new Error("Not allowed by CORS"));
     },
   })
 );
-app.disable("x-powered-by");
+app.disable("x-powered-by"); // deshabilitar el header X-Powered-By: Express
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "hola mundo",
-  });
+// métodos normales: GET/HEAD/POST
+// métodos complejos: PUT/PATCH/DELETE
+
+// CORS PRE-Flight
+// OPTIONS
+
+// Todos los recursos que sean MOVIES se identifica con /movies
+app.get("/movies", (req, res) => {
+  const { genre } = req.query;
+  if (genre) {
+    const filteredMovies = movies.filter((movie) =>
+      movie.genre.some((g) => g.toLowerCase() === genre.toLowerCase())
+    );
+    return res.json(filteredMovies);
+  }
+  res.json(movies);
 });
 
-// agregar una nueva peli
+app.get("/movies/:id", (req, res) => {
+  const { id } = req.params;
+  const movie = movies.find((movie) => movie.id === id);
+  if (movie) return res.json(movie);
+  res.status(404).json({ message: "Movie not found" });
+});
+
 app.post("/movies", (req, res) => {
   const result = validateMovie(req.body);
-  if (result.error) {
-    return res.status(400).json({ error: result.error.issues });
+
+  if (!result.success) {
+    // 422 Unprocessable Entity
+    return res.status(400).json({ error: JSON.parse(result.error.message) });
   }
 
+  // en base de datos
   const newMovie = {
-    id: crypto.randomUUID(),
+    id: crypto.randomUUID(), // uuid v4
     ...result.data,
   };
 
+  // Esto no sería REST, porque estamos guardando
+  // el estado de la aplicación en memoria
   movies.push(newMovie);
 
   res.status(201).json(newMovie);
 });
 
-// -> definicion de varias rutas para CORS
-ACCEPTED_ORIGINS = [
-  "https://movies.com",
-  "https://minu.dev",
-  "http://localhost:8080",
-];
+app.delete("/movies/:id", (req, res) => {
+  const { id } = req.params;
+  const movieIndex = movies.findIndex((movie) => movie.id === id);
 
-// Mostrar todas las pelis o buscar una peli por su genero (depende de la variable)
-app.get("/movies", (req, res) => {
-  // uso de CORS, '*' es para que todos tengan acceso
-  // res.header("Access-Control-Allow-Origin", "*");
-
-  // 'http://localhost:8080' ahora solo desde el puerto 8080 se puede consumir...
-  // res.header("Access-Control-Allow-Origin", "http://localhost:8080");
-
-  // acceso de CORS para varias rutas diferentes
-  const origin = req.header("origin");
-  if (ACCEPTED_ORIGINS.includes(origin) || !origin) {
-    console.log(origin);
-    res.header("Access-Control-Allow-Origin", origin);
-  } else {
-    // opcional: rechazar la petición o no enviar la cabecera
-    console.log("Origen no permitido:", origin);
-    res.status(403).send("CORS no permitido");
-    return;
+  if (movieIndex === -1) {
+    return res.status(404).json({ message: "Movie not found" });
   }
 
-  const { genre } = req.query; //si existe la variable genre en la url de la peticion
-  if (genre) {
-    const filterMovies = movies.filter((movie) =>
-      movie.genre.some(
-        (g) => g.toLocaleLowerCase() === genre.toLocaleLowerCase()
-      )
-    );
-    return res.json(filterMovies);
-  }
-  res.json(movies);
+  movies.splice(movieIndex, 1);
+
+  return res.json({ message: "Movie deleted" });
 });
 
-// Eliminar una pelicula
-app.delete("/movies/:id", (req, res) => {
-  // acceso de CORS para varias rutas diferentes
-  const origin = req.header("origin");
-  if (ACCEPTED_ORIGINS.includes(origin) || !origin) {
-    console.log(origin);
-    res.header("Access-Control-Allow-Origin", origin);
+app.patch("/movies/:id", (req, res) => {
+  const result = validatePartialMovie(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({ error: JSON.parse(result.error.message) });
   }
 
   const { id } = req.params;
   const movieIndex = movies.findIndex((movie) => movie.id === id);
 
-  if (movieIndex < 0) {
-    return res.status(404).json({ message: "Pelicula no encontrada" });
+  if (movieIndex === -1) {
+    return res.status(404).json({ message: "Movie not found" });
   }
-
-  movies.splice(movieIndex, 1);
-  return res.json({ message: "Pelicula eliminada" });
-});
-
-// Mostrar una peli por su ID
-app.get("/movies/:id", (req, res) => {
-  const { id } = req.params;
-  const movie = movies.find((movie) => movie.id === id);
-
-  if (movie) return res.json(movie);
-  res.status(404).json({ message: "Pelicula no encontrada" });
-});
-
-// Actualizar los datos de una peli todos o solo una parte
-app.patch("/movies/:id", (req, res) => {
-  const result = validatePartialMovie(req.body);
-  if (!result.success)
-    return res.status(400).json({ error: result.error.issues });
-
-  const { id } = req.params;
-  const movieIndex = movies.findIndex((m) => m.id === id);
-  if (movieIndex < 0)
-    return res.status(404).json({ message: "Pelicula no encontrada" });
 
   const updateMovie = {
     ...movies[movieIndex],
@@ -139,20 +110,12 @@ app.patch("/movies/:id", (req, res) => {
   };
 
   movies[movieIndex] = updateMovie;
-  return res.status(201).json(updateMovie);
+
+  return res.json(updateMovie);
 });
 
-// Definicion para CORS complejas
-app.options("/movies/:id", (req, res) => {
-  const origin = req.header("origin");
-  if (ACCEPTED_ORIGINS.includes(origin) || !origin) {
-    res.header("Access-Control-Allow-Origin", origin);
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
-  }
-
-  res.send(200);
-});
+const PORT = process.env.PORT ?? 1234;
 
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}/`);
+  console.log(`server listening on port http://localhost:${PORT}`);
 });
