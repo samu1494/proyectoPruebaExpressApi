@@ -1,5 +1,5 @@
 // npm install zod -E
-const z = require("zod"); //usual para validaciones rapidas
+import z from "zod"; //usual para validaciones rapidas
 
 //uso de zod para validaciones rapidas
 const movieScheme = z.object({
@@ -33,15 +33,10 @@ const movieScheme = z.object({
   ),
 });
 
-function validateMovie(input) {
+export function validateMovie(input) {
   return movieScheme.safeParse(input);
 }
 
-function validatePartialMovie(input) {
+export function validatePartialMovie(input) {
   return movieScheme.partial().safeParse(input);
 }
-
-module.exports = {
-  validateMovie,
-  validatePartialMovie,
-};
