@@ -2,10 +2,10 @@
 GET http://localhost:1234/movies
 
 ###recuperar una pelicula por ID
-GET http://localhost:1234/movies/5ad1a235-0d9c-410a-b32b-220d91689a08
+GET http://localhost:1234/movies/c6c40e8b-8160-11f0-af7f-2c58b936afdf
 
 ###recuperar todas las peliculas por un genero
-GET http://localhost:1234/movies?genre=ACTIOn
+GET http://localhost:1234/movies?genre=sci-FI
 
 ###POST -  CREAR UNA PELICULA
 POST http://localhost:1234/movies
@@ -13,16 +13,17 @@ Content-Type: application/json
 
 {
   "sql": "select * from users",
-  "title": "Error",
-  "year": 1996,
-  "director": "SAMUDEV",
-  "duration": 10,
+  "title": "Silencio de los inocentes",
+  "year": 2004,
+  "director": "Albert Heigbert",
+  "duration": 205,
   "poster": "https://i.ebayimg.com/images/g/QFQAAOSwAQpfjaA6/s-l1200.jpg",
-  "genre": ["Action", "Sci-Fi"]
+  "genre": ["Action", "Romance", "Crime"],
+  "rate": 5.5
 }
 
 ### Eliminar una pelicula por ID
-DELETE http://localhost:1234/movies/dcdd0fad-a94c-4810-8acc-5f108d3b18c3
+DELETE http://localhost:1234/movies/43ee8fb4-8178-11f0-af7f-2c58b936afdfas
 
 
 ###Actualizar unos datos de una pelicula

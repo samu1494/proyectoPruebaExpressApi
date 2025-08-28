@@ -24,6 +24,8 @@ const movieScheme = z.object({
       "Biography",
       "Adventure",
       "Fantasy",
+      "Romance",
+      "Crime",
     ]),
     {
       required_error: "El genero de la pelicula es requerido",
